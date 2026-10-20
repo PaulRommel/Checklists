@@ -51,14 +51,11 @@ class ChecklistViewController: UITableViewController {
 
     // MARK: - Actions
     @objc func addItem() {
-        let newRowIndex = items.count
+        let addItemViewController = AddItemViewController()
+        addItemViewController.delegate = self
 
-        let item = ChecklistItem()
-        item.text = "I am a new row"
-        items.append(item)
-
-        let indexPath = IndexPath(row: newRowIndex, section: 0)
-        tableView.insertRows(at: [indexPath], with: .automatic)
+        let navigationController = UINavigationController(rootViewController: addItemViewController)
+        present(navigationController, animated: true)
     }
 
     // MARK: - Table View Data Source
@@ -104,5 +101,24 @@ class ChecklistViewController: UITableViewController {
 
     func configureText(for cell: ChecklistItemCell, with item: ChecklistItem) {
         cell.titleLabel.text = item.text
+    }
+}
+
+// MARK: - AddItemViewControllerDelegate
+extension ChecklistViewController: AddItemViewControllerDelegate {
+
+    func addItemViewControllerDidCancel(_ controller: AddItemViewController) {
+        dismiss(animated: true)
+    }
+
+    func addItemViewController(_ controller: AddItemViewController,
+                               didFinishAdding item: ChecklistItem) {
+        let newRowIndex = items.count
+        items.append(item)
+
+        let indexPath = IndexPath(row: newRowIndex, section: 0)
+        tableView.insertRows(at: [indexPath], with: .automatic)
+
+        dismiss(animated: true)
     }
 }
