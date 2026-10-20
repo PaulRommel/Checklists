@@ -17,10 +17,14 @@ class ChecklistViewController: UITableViewController {
         super.viewDidLoad()
         title = "Checklists"
 
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .add,
+            target: self,
+            action: #selector(addItem))
+
         tableView.register(ChecklistItemCell.self,
                            forCellReuseIdentifier: ChecklistItemCell.reuseID)
 
-        // Заполнение модели, как в книге
         let item1 = ChecklistItem()
         item1.text = "Walk the dog"
         items.append(item1)
@@ -45,6 +49,15 @@ class ChecklistViewController: UITableViewController {
         items.append(item5)
     }
 
+    // MARK: - Actions
+    @objc func addItem() {
+        let addItemViewController = AddItemViewController()
+        addItemViewController.delegate = self
+
+        let navigationController = UINavigationController(rootViewController: addItemViewController)
+        present(navigationController, animated: true)
+    }
+
     // MARK: - Table View Data Source
     override func tableView(_ tableView: UITableView,
                             numberOfRowsInSection section: Int) -> Int {
@@ -61,6 +74,13 @@ class ChecklistViewController: UITableViewController {
         configureText(for: cell, with: item)
         configureCheckmark(for: cell, with: item)
         return cell
+    }
+
+    override func tableView(_ tableView: UITableView,
+                            commit editingStyle: UITableViewCell.EditingStyle,
+                            forRowAt indexPath: IndexPath) {
+        items.remove(at: indexPath.row)
+        tableView.deleteRows(at: [indexPath], with: .automatic)
     }
 
     // MARK: - Table View Delegate
@@ -81,5 +101,24 @@ class ChecklistViewController: UITableViewController {
 
     func configureText(for cell: ChecklistItemCell, with item: ChecklistItem) {
         cell.titleLabel.text = item.text
+    }
+}
+
+// MARK: - AddItemViewControllerDelegate
+extension ChecklistViewController: AddItemViewControllerDelegate {
+
+    func addItemViewControllerDidCancel(_ controller: AddItemViewController) {
+        dismiss(animated: true)
+    }
+
+    func addItemViewController(_ controller: AddItemViewController,
+                               didFinishAdding item: ChecklistItem) {
+        let newRowIndex = items.count
+        items.append(item)
+
+        let indexPath = IndexPath(row: newRowIndex, section: 0)
+        tableView.insertRows(at: [indexPath], with: .automatic)
+
+        dismiss(animated: true)
     }
 }
