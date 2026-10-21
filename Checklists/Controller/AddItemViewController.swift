@@ -11,36 +11,49 @@ protocol AddItemViewControllerDelegate: AnyObject {
     func addItemViewControllerDidCancel(_ controller: AddItemViewController)
     func addItemViewController(_ controller: AddItemViewController,
                                didFinishAdding item: ChecklistItem)
+    func addItemViewController(_ controller: AddItemViewController,
+                               didFinishEditing item: ChecklistItem)
 }
 
 class AddItemViewController: UITableViewController {
 
     weak var delegate: AddItemViewControllerDelegate?
+    var itemToEdit: ChecklistItem?          // nil = режим добавления, не nil = редактирование
 
     let textField = UITextField()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Add Item"
 
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .cancel,
             target: self,
             action: #selector(cancel))
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
+        let doneButton = UIBarButtonItem(
             barButtonSystemItem: .done,
             target: self,
             action: #selector(done))
+        navigationItem.rightBarButtonItem = doneButton
 
         textField.placeholder = "Item name"
         textField.borderStyle = .none
         textField.autocapitalizationType = .sentences
+        textField.delegate = self
+
+        if let item = itemToEdit {
+            title = "Edit Item"
+            textField.text = item.text
+            doneButton.isEnabled = true          // текст уже есть — Done сразу активен
+        } else {
+            title = "Add Item"
+            doneButton.isEnabled = false         // поле пустое — Done неактивен
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        textField.becomeFirstResponder()   // клавиатура появляется сразу
+        textField.becomeFirstResponder()
     }
 
     // MARK: - Table View
@@ -72,10 +85,28 @@ class AddItemViewController: UITableViewController {
     }
 
     @objc func done() {
-        let item = ChecklistItem()
-        item.text = textField.text ?? ""
-        item.checked = false
+        let text = textField.text ?? ""
 
-        delegate?.addItemViewController(self, didFinishAdding: item)
+        if let item = itemToEdit {
+            item.text = text
+            delegate?.addItemViewController(self, didFinishEditing: item)
+        } else {
+            let item = ChecklistItem()
+            item.text = text
+            item.checked = false
+            delegate?.addItemViewController(self, didFinishAdding: item)
+        }
+    }
+}
+
+// MARK: - UITextFieldDelegate
+extension AddItemViewController: UITextFieldDelegate {
+    func textField(_ textField: UITextField,
+                   shouldChangeCharactersIn range: NSRange,
+                   replacementString string: String) -> Bool {
+        let oldText = (textField.text ?? "") as NSString
+        let newText = oldText.replacingCharacters(in: range, with: string)
+        navigationItem.rightBarButtonItem?.isEnabled = !newText.isEmpty
+        return true
     }
 }

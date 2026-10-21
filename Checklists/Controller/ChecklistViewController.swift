@@ -25,34 +25,43 @@ class ChecklistViewController: UITableViewController {
         tableView.register(ChecklistItemCell.self,
                            forCellReuseIdentifier: ChecklistItemCell.reuseID)
 
-        let item1 = ChecklistItem()
-        item1.text = "Walk the dog"
-        items.append(item1)
+            let item1 = ChecklistItem()
+            item1.text = "Walk the dog"
+            items.append(item1)
 
-        let item2 = ChecklistItem()
-        item2.text = "Brush my teeth"
-        item2.checked = true
-        items.append(item2)
+            let item2 = ChecklistItem()
+            item2.text = "Brush my teeth"
+            item2.checked = true
+            items.append(item2)
 
-        let item3 = ChecklistItem()
-        item3.text = "Learn iOS development"
-        item3.checked = true
-        items.append(item3)
+            let item3 = ChecklistItem()
+            item3.text = "Learn iOS development"
+            item3.checked = true
+            items.append(item3)
 
-        let item4 = ChecklistItem()
-        item4.text = "Soccer practice"
-        items.append(item4)
+            let item4 = ChecklistItem()
+            item4.text = "Soccer practice"
+            items.append(item4)
 
-        let item5 = ChecklistItem()
-        item5.text = "Eat ice cream"
-        item5.checked = true
-        items.append(item5)
+            let item5 = ChecklistItem()
+            item5.text = "Eat ice cream"
+            item5.checked = true
+            items.append(item5)
     }
 
     // MARK: - Actions
     @objc func addItem() {
         let addItemViewController = AddItemViewController()
         addItemViewController.delegate = self
+
+        let navigationController = UINavigationController(rootViewController: addItemViewController)
+        present(navigationController, animated: true)
+    }
+
+    func editItem(at indexPath: IndexPath) {
+        let addItemViewController = AddItemViewController()
+        addItemViewController.delegate = self
+        addItemViewController.itemToEdit = items[indexPath.row]
 
         let navigationController = UINavigationController(rootViewController: addItemViewController)
         present(navigationController, animated: true)
@@ -86,7 +95,7 @@ class ChecklistViewController: UITableViewController {
     // MARK: - Table View Delegate
     override func tableView(_ tableView: UITableView,
                             didSelectRowAt indexPath: IndexPath) {
-        if let cell = tableView.cellForRow(at: indexPath) {
+        if let cell = tableView.cellForRow(at: indexPath) as? ChecklistItemCell {
             let item = items[indexPath.row]
             item.toggleChecked()
             configureCheckmark(for: cell, with: item)
@@ -94,9 +103,16 @@ class ChecklistViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
     }
 
+    // Новый метод — вызывается при нажатии на кружок "i"
+    override func tableView(_ tableView: UITableView,
+                            accessoryButtonTappedForRowWith indexPath: IndexPath) {
+        editItem(at: indexPath)
+    }
+
     // MARK: - Helpers
-    func configureCheckmark(for cell: UITableViewCell, with item: ChecklistItem) {
-        cell.accessoryType = item.checked ? .checkmark : .none
+    func configureCheckmark(for cell: ChecklistItemCell, with item: ChecklistItem) {
+        cell.checkLabel.text = item.checked ? "√" : ""
+        cell.accessoryType = .detailDisclosureButton
     }
 
     func configureText(for cell: ChecklistItemCell, with item: ChecklistItem) {
@@ -119,6 +135,15 @@ extension ChecklistViewController: AddItemViewControllerDelegate {
         let indexPath = IndexPath(row: newRowIndex, section: 0)
         tableView.insertRows(at: [indexPath], with: .automatic)
 
+        dismiss(animated: true)
+    }
+
+    func addItemViewController(_ controller: AddItemViewController,
+                               didFinishEditing item: ChecklistItem) {
+        if let index = items.firstIndex(where: { $0 === item }),
+           let cell = tableView.cellForRow(at: IndexPath(row: index, section: 0)) as? ChecklistItemCell {
+            configureText(for: cell, with: item)
+        }
         dismiss(animated: true)
     }
 }
