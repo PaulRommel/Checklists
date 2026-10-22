@@ -25,28 +25,7 @@ class ChecklistViewController: UITableViewController {
         tableView.register(ChecklistItemCell.self,
                            forCellReuseIdentifier: ChecklistItemCell.reuseID)
 
-            let item1 = ChecklistItem()
-            item1.text = "Walk the dog"
-            items.append(item1)
-
-            let item2 = ChecklistItem()
-            item2.text = "Brush my teeth"
-            item2.checked = true
-            items.append(item2)
-
-            let item3 = ChecklistItem()
-            item3.text = "Learn iOS development"
-            item3.checked = true
-            items.append(item3)
-
-            let item4 = ChecklistItem()
-            item4.text = "Soccer practice"
-            items.append(item4)
-
-            let item5 = ChecklistItem()
-            item5.text = "Eat ice cream"
-            item5.checked = true
-            items.append(item5)
+        loadChecklistItems()   // вместо пяти жёстко прописанных элементов
     }
 
     // MARK: - Actions
@@ -90,6 +69,8 @@ class ChecklistViewController: UITableViewController {
                             forRowAt indexPath: IndexPath) {
         items.remove(at: indexPath.row)
         tableView.deleteRows(at: [indexPath], with: .automatic)
+
+        saveChecklistItems()
     }
 
     // MARK: - Table View Delegate
@@ -101,9 +82,10 @@ class ChecklistViewController: UITableViewController {
             configureCheckmark(for: cell, with: item)
         }
         tableView.deselectRow(at: indexPath, animated: true)
+
+        saveChecklistItems()
     }
 
-    // Новый метод — вызывается при нажатии на кружок "i"
     override func tableView(_ tableView: UITableView,
                             accessoryButtonTappedForRowWith indexPath: IndexPath) {
         editItem(at: indexPath)
@@ -117,6 +99,38 @@ class ChecklistViewController: UITableViewController {
 
     func configureText(for cell: ChecklistItemCell, with item: ChecklistItem) {
         cell.titleLabel.text = item.text
+    }
+
+    // MARK: - Saving and Loading
+    func documentsDirectory() -> URL {
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        return paths[0]
+    }
+
+    func dataFilePath() -> URL {
+        documentsDirectory().appendingPathComponent("Checklists.plist")
+    }
+
+    func saveChecklistItems() {
+        let encoder = PropertyListEncoder()
+        do {
+            let data = try encoder.encode(items)
+            try data.write(to: dataFilePath(), options: .atomic)
+        } catch {
+            print("Error encoding item array: \(error.localizedDescription)")
+        }
+    }
+
+    func loadChecklistItems() {
+        let path = dataFilePath()
+        guard let data = try? Data(contentsOf: path) else { return }
+
+        let decoder = PropertyListDecoder()
+        do {
+            items = try decoder.decode([ChecklistItem].self, from: data)
+        } catch {
+            print("Error decoding item array: \(error.localizedDescription)")
+        }
     }
 }
 
@@ -136,6 +150,7 @@ extension ChecklistViewController: AddItemViewControllerDelegate {
         tableView.insertRows(at: [indexPath], with: .automatic)
 
         dismiss(animated: true)
+        saveChecklistItems()
     }
 
     func addItemViewController(_ controller: AddItemViewController,
@@ -145,5 +160,6 @@ extension ChecklistViewController: AddItemViewControllerDelegate {
             configureText(for: cell, with: item)
         }
         dismiss(animated: true)
+        saveChecklistItems()
     }
 }
