@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import UserNotifications
 
 class ChecklistViewController: UITableViewController {
 
@@ -25,7 +26,7 @@ class ChecklistViewController: UITableViewController {
         tableView.register(ChecklistItemCell.self,
                            forCellReuseIdentifier: ChecklistItemCell.reuseID)
 
-        loadChecklistItems()   // вместо пяти жёстко прописанных элементов
+        loadChecklistItems()
     }
 
     // MARK: - Actions
@@ -67,6 +68,8 @@ class ChecklistViewController: UITableViewController {
     override func tableView(_ tableView: UITableView,
                             commit editingStyle: UITableViewCell.EditingStyle,
                             forRowAt indexPath: IndexPath) {
+        removeNotification(for: items[indexPath.row])
+
         items.remove(at: indexPath.row)
         tableView.deleteRows(at: [indexPath], with: .automatic)
 
@@ -132,6 +135,33 @@ class ChecklistViewController: UITableViewController {
             print("Error decoding item array: \(error.localizedDescription)")
         }
     }
+
+    // MARK: - Notifications
+    func scheduleNotification(for item: ChecklistItem) {
+        removeNotification(for: item)
+
+        guard item.shouldRemind, item.dueDate > Date() else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Reminder:"
+        content.body = item.text
+        content.sound = .default
+
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute],
+                                                  from: item.dueDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+
+        let request = UNNotificationRequest(identifier: item.itemID,
+                                            content: content,
+                                            trigger: trigger)
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    func removeNotification(for item: ChecklistItem) {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: [item.itemID])
+    }
 }
 
 // MARK: - AddItemViewControllerDelegate
@@ -151,6 +181,7 @@ extension ChecklistViewController: AddItemViewControllerDelegate {
 
         dismiss(animated: true)
         saveChecklistItems()
+        scheduleNotification(for: item)
     }
 
     func addItemViewController(_ controller: AddItemViewController,
@@ -161,5 +192,6 @@ extension ChecklistViewController: AddItemViewControllerDelegate {
         }
         dismiss(animated: true)
         saveChecklistItems()
+        scheduleNotification(for: item)
     }
 }
