@@ -2,21 +2,22 @@
 //  ChecklistViewController.swift
 //  Checklists
 //
-//  Created by Павел Попов on 10.10.2026.
-//
 
 import UIKit
 import UserNotifications
 
+protocol ChecklistViewControllerDelegate: AnyObject {
+    func checklistViewControllerDidChangeChecklist(_ controller: ChecklistViewController)
+}
+
 class ChecklistViewController: UITableViewController {
 
-    // MARK: - Model
-    var items = [ChecklistItem]()
+    var checklist: Checklist!
+    weak var delegate: ChecklistViewControllerDelegate?
 
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Checklists"
+        title = checklist.name
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .add,
@@ -25,8 +26,6 @@ class ChecklistViewController: UITableViewController {
 
         tableView.register(ChecklistItemCell.self,
                            forCellReuseIdentifier: ChecklistItemCell.reuseID)
-
-        loadChecklistItems()
     }
 
     // MARK: - Actions
@@ -41,7 +40,7 @@ class ChecklistViewController: UITableViewController {
     func editItem(at indexPath: IndexPath) {
         let addItemViewController = AddItemViewController()
         addItemViewController.delegate = self
-        addItemViewController.itemToEdit = items[indexPath.row]
+        addItemViewController.itemToEdit = checklist.items[indexPath.row]
 
         let navigationController = UINavigationController(rootViewController: addItemViewController)
         present(navigationController, animated: true)
@@ -50,7 +49,7 @@ class ChecklistViewController: UITableViewController {
     // MARK: - Table View Data Source
     override func tableView(_ tableView: UITableView,
                             numberOfRowsInSection section: Int) -> Int {
-        return items.count
+        return checklist.items.count
     }
 
     override func tableView(_ tableView: UITableView,
@@ -59,7 +58,7 @@ class ChecklistViewController: UITableViewController {
             withIdentifier: ChecklistItemCell.reuseID,
             for: indexPath) as! ChecklistItemCell
 
-        let item = items[indexPath.row]
+        let item = checklist.items[indexPath.row]
         configureText(for: cell, with: item)
         configureCheckmark(for: cell, with: item)
         return cell
@@ -68,25 +67,25 @@ class ChecklistViewController: UITableViewController {
     override func tableView(_ tableView: UITableView,
                             commit editingStyle: UITableViewCell.EditingStyle,
                             forRowAt indexPath: IndexPath) {
-        removeNotification(for: items[indexPath.row])
+        removeNotification(for: checklist.items[indexPath.row])
 
-        items.remove(at: indexPath.row)
+        checklist.items.remove(at: indexPath.row)
         tableView.deleteRows(at: [indexPath], with: .automatic)
 
-        saveChecklistItems()
+        delegate?.checklistViewControllerDidChangeChecklist(self)
     }
 
     // MARK: - Table View Delegate
     override func tableView(_ tableView: UITableView,
                             didSelectRowAt indexPath: IndexPath) {
         if let cell = tableView.cellForRow(at: indexPath) as? ChecklistItemCell {
-            let item = items[indexPath.row]
+            let item = checklist.items[indexPath.row]
             item.toggleChecked()
             configureCheckmark(for: cell, with: item)
         }
         tableView.deselectRow(at: indexPath, animated: true)
 
-        saveChecklistItems()
+        delegate?.checklistViewControllerDidChangeChecklist(self)
     }
 
     override func tableView(_ tableView: UITableView,
@@ -102,38 +101,6 @@ class ChecklistViewController: UITableViewController {
 
     func configureText(for cell: ChecklistItemCell, with item: ChecklistItem) {
         cell.titleLabel.text = item.text
-    }
-
-    // MARK: - Saving and Loading
-    func documentsDirectory() -> URL {
-        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-        return paths[0]
-    }
-
-    func dataFilePath() -> URL {
-        documentsDirectory().appendingPathComponent("Checklists.plist")
-    }
-
-    func saveChecklistItems() {
-        let encoder = PropertyListEncoder()
-        do {
-            let data = try encoder.encode(items)
-            try data.write(to: dataFilePath(), options: .atomic)
-        } catch {
-            print("Error encoding item array: \(error.localizedDescription)")
-        }
-    }
-
-    func loadChecklistItems() {
-        let path = dataFilePath()
-        guard let data = try? Data(contentsOf: path) else { return }
-
-        let decoder = PropertyListDecoder()
-        do {
-            items = try decoder.decode([ChecklistItem].self, from: data)
-        } catch {
-            print("Error decoding item array: \(error.localizedDescription)")
-        }
     }
 
     // MARK: - Notifications
@@ -173,25 +140,25 @@ extension ChecklistViewController: AddItemViewControllerDelegate {
 
     func addItemViewController(_ controller: AddItemViewController,
                                didFinishAdding item: ChecklistItem) {
-        let newRowIndex = items.count
-        items.append(item)
+        let newRowIndex = checklist.items.count
+        checklist.items.append(item)
 
         let indexPath = IndexPath(row: newRowIndex, section: 0)
         tableView.insertRows(at: [indexPath], with: .automatic)
 
         dismiss(animated: true)
-        saveChecklistItems()
+        delegate?.checklistViewControllerDidChangeChecklist(self)
         scheduleNotification(for: item)
     }
 
     func addItemViewController(_ controller: AddItemViewController,
                                didFinishEditing item: ChecklistItem) {
-        if let index = items.firstIndex(where: { $0 === item }),
+        if let index = checklist.items.firstIndex(where: { $0 === item }),
            let cell = tableView.cellForRow(at: IndexPath(row: index, section: 0)) as? ChecklistItemCell {
             configureText(for: cell, with: item)
         }
         dismiss(animated: true)
-        saveChecklistItems()
+        delegate?.checklistViewControllerDidChangeChecklist(self)
         scheduleNotification(for: item)
     }
 }
