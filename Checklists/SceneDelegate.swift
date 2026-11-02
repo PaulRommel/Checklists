@@ -8,6 +8,7 @@ import UIKit
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
+    let dataModel = DataModel()
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
 
@@ -16,8 +17,20 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let window = UIWindow(windowScene: windowScene)
 
         let allListsViewController = AllListsViewController()
+        allListsViewController.dataModel = dataModel
+
         let navigationController = UINavigationController(rootViewController: allListsViewController)
         navigationController.navigationBar.prefersLargeTitles = true
+
+        // Если в прошлый раз был открыт конкретный список — сразу переходим в него
+        let index = dataModel.indexOfSelectedChecklist
+        if index >= 0 && index < dataModel.lists.count {
+            let checklist = dataModel.lists[index]
+            let checklistViewController = ChecklistViewController()
+            checklistViewController.checklist = checklist
+            checklistViewController.delegate = allListsViewController
+            navigationController.pushViewController(checklistViewController, animated: false)
+        }
 
         window.rootViewController = navigationController
         self.window = window

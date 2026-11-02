@@ -7,7 +7,7 @@ import UIKit
 
 class AllListsViewController: UITableViewController {
 
-    var lists = [Checklist]()
+    var dataModel: DataModel!
     private let listCellReuseID = "ListCell"
 
     override func viewDidLoad() {
@@ -20,8 +20,16 @@ class AllListsViewController: UITableViewController {
             action: #selector(addList))
 
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: listCellReuseID)
+    }
 
-        loadChecklists()
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Если этот экран снова единственный в стеке — значит, мы вернулись
+        // сюда назад (или это первый запуск без восстановления). В обоих
+        // случаях больше нет "выбранного" списка для автоперехода.
+        if navigationController?.viewControllers.count == 1 {
+            dataModel.indexOfSelectedChecklist = -1
+        }
     }
 
     // MARK: - Actions
@@ -36,7 +44,7 @@ class AllListsViewController: UITableViewController {
     func editList(at indexPath: IndexPath) {
         let detailViewController = ListDetailViewController()
         detailViewController.delegate = self
-        detailViewController.checklistToEdit = lists[indexPath.row]
+        detailViewController.checklistToEdit = dataModel.lists[indexPath.row]
 
         let navigationController = UINavigationController(rootViewController: detailViewController)
         present(navigationController, animated: true)
@@ -45,13 +53,13 @@ class AllListsViewController: UITableViewController {
     // MARK: - Table View Data Source
     override func tableView(_ tableView: UITableView,
                             numberOfRowsInSection section: Int) -> Int {
-        return lists.count
+        return dataModel.lists.count
     }
 
     override func tableView(_ tableView: UITableView,
                             cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: listCellReuseID, for: indexPath)
-        let checklist = lists[indexPath.row]
+        let checklist = dataModel.lists[indexPath.row]
 
         var content = cell.defaultContentConfiguration()
         content.text = checklist.name
@@ -65,15 +73,17 @@ class AllListsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView,
                             commit editingStyle: UITableViewCell.EditingStyle,
                             forRowAt indexPath: IndexPath) {
-        lists.remove(at: indexPath.row)
+        dataModel.lists.remove(at: indexPath.row)
         tableView.deleteRows(at: [indexPath], with: .automatic)
-        saveChecklists()
+        dataModel.saveChecklists()
     }
 
     // MARK: - Table View Delegate
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        dataModel.indexOfSelectedChecklist = indexPath.row
+
         let checklistViewController = ChecklistViewController()
-        checklistViewController.checklist = lists[indexPath.row]
+        checklistViewController.checklist = dataModel.lists[indexPath.row]
         checklistViewController.delegate = self
         navigationController?.pushViewController(checklistViewController, animated: true)
     }
@@ -81,37 +91,6 @@ class AllListsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView,
                             accessoryButtonTappedForRowWith indexPath: IndexPath) {
         editList(at: indexPath)
-    }
-
-    // MARK: - Saving and Loading
-    func documentsDirectory() -> URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    }
-
-    func dataFilePath() -> URL {
-        documentsDirectory().appendingPathComponent("Checklists.plist")
-    }
-
-    func saveChecklists() {
-        let encoder = PropertyListEncoder()
-        do {
-            let data = try encoder.encode(lists)
-            try data.write(to: dataFilePath(), options: .atomic)
-        } catch {
-            print("Error encoding list array: \(error.localizedDescription)")
-        }
-    }
-
-    func loadChecklists() {
-        let path = dataFilePath()
-        guard let data = try? Data(contentsOf: path) else { return }
-
-        let decoder = PropertyListDecoder()
-        do {
-            lists = try decoder.decode([Checklist].self, from: data)
-        } catch {
-            print("Error decoding list array: \(error.localizedDescription)")
-        }
     }
 }
 
@@ -124,23 +103,23 @@ extension AllListsViewController: ListDetailViewControllerDelegate {
 
     func listDetailViewController(_ controller: ListDetailViewController,
                                   didFinishAdding checklist: Checklist) {
-        let newRowIndex = lists.count
-        lists.append(checklist)
+        let newRowIndex = dataModel.lists.count
+        dataModel.lists.append(checklist)
 
         let indexPath = IndexPath(row: newRowIndex, section: 0)
         tableView.insertRows(at: [indexPath], with: .automatic)
 
         dismiss(animated: true)
-        saveChecklists()
+        dataModel.saveChecklists()
     }
 
     func listDetailViewController(_ controller: ListDetailViewController,
                                   didFinishEditing checklist: Checklist) {
-        if let index = lists.firstIndex(where: { $0 === checklist }) {
+        if let index = dataModel.lists.firstIndex(where: { $0 === checklist }) {
             tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
         }
         dismiss(animated: true)
-        saveChecklists()
+        dataModel.saveChecklists()
     }
 }
 
@@ -148,6 +127,6 @@ extension AllListsViewController: ListDetailViewControllerDelegate {
 extension AllListsViewController: ChecklistViewControllerDelegate {
     func checklistViewControllerDidChangeChecklist(_ controller: ChecklistViewController) {
         tableView.reloadData()   // чтобы счётчик пунктов в строке обновился
-        saveChecklists()
+        dataModel.saveChecklists()
     }
 }
