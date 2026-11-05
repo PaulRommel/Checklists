@@ -75,6 +75,14 @@ class AllListsViewController: UITableViewController {
                             forRowAt indexPath: IndexPath) {
         dataModel.lists.remove(at: indexPath.row)
         tableView.deleteRows(at: [indexPath], with: .automatic)
+
+        // Удалили как раз тот список, что был "запомнен" как последний
+        // открытый — без этого при следующем запуске индекс указывал бы
+        // в пустоту или не на тот список.
+        if dataModel.indexOfSelectedChecklist == indexPath.row {
+            dataModel.indexOfSelectedChecklist = -1
+        }
+
         dataModel.saveChecklists()
     }
 

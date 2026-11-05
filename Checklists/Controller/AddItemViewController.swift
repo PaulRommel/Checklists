@@ -169,7 +169,7 @@ class AddItemViewController: UITableViewController {
     }
 
     private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
             if !granted {
                 DispatchQueue.main.async {
                     self.remindSwitch.isOn = false
