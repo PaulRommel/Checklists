@@ -6,12 +6,15 @@
 //
 
 import UIKit
+import UserNotifications
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Без этого уведомления не показываются, пока приложение открыто
+        // на переднем плане — баннер/звук сработали бы только в фоне.
+        UNUserNotificationCenter.current().delegate = self
         return true
     }
 
@@ -30,5 +33,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
 
+}
+
+// MARK: - UNUserNotificationCenterDelegate
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    // Показываем баннер, звук и обновляем бейдж, даже если приложение
+    // сейчас активно на экране — по умолчанию UIKit в этом случае
+    // уведомление молча проглатывает.
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound, .badge])
+    }
 }
 
