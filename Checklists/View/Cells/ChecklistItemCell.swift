@@ -17,6 +17,7 @@ final class ChecklistItemCell: UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
 
         checkLabel.font = .preferredFont(forTextStyle: .body)
+        checkLabel.textColor = .tintColor   // галочка в цвете акцента приложения
         checkLabel.setContentHuggingPriority(.required, for: .horizontal)
         checkLabel.translatesAutoresizingMaskIntoConstraints = false
         checkLabel.widthAnchor.constraint(equalToConstant: 24).isActive = true

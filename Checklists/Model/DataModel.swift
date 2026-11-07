@@ -24,7 +24,15 @@ class DataModel {
         registerDefaults()
         handleFirstTime()
         validateIndexOfSelectedChecklist()
+        sortChecklists()
         updateBadgeNumber()
+    }
+
+    // MARK: - Sorting
+    func sortChecklists() {
+        lists.sort { list1, list2 in
+            list1.name.localizedStandardCompare(list2.name) == .orderedAscending
+        }
     }
 
     // MARK: - Defaults

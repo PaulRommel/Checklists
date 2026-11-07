@@ -26,6 +26,8 @@ class ChecklistViewController: UITableViewController {
 
         tableView.register(ChecklistItemCell.self,
                            forCellReuseIdentifier: ChecklistItemCell.reuseID)
+
+        checklist.sortChecklistItems()
     }
 
     // MARK: - Actions
@@ -140,11 +142,9 @@ extension ChecklistViewController: AddItemViewControllerDelegate {
 
     func addItemViewController(_ controller: AddItemViewController,
                                didFinishAdding item: ChecklistItem) {
-        let newRowIndex = checklist.items.count
         checklist.items.append(item)
-
-        let indexPath = IndexPath(row: newRowIndex, section: 0)
-        tableView.insertRows(at: [indexPath], with: .automatic)
+        checklist.sortChecklistItems()
+        tableView.reloadData()   // новая строка встаёт по алфавиту, не в конец
 
         dismiss(animated: true)
         delegate?.checklistViewControllerDidChangeChecklist(self)
@@ -153,10 +153,9 @@ extension ChecklistViewController: AddItemViewControllerDelegate {
 
     func addItemViewController(_ controller: AddItemViewController,
                                didFinishEditing item: ChecklistItem) {
-        if let index = checklist.items.firstIndex(where: { $0 === item }),
-           let cell = tableView.cellForRow(at: IndexPath(row: index, section: 0)) as? ChecklistItemCell {
-            configureText(for: cell, with: item)
-        }
+        checklist.sortChecklistItems()
+        tableView.reloadData()   // текст мог измениться — строка может переехать
+
         dismiss(animated: true)
         delegate?.checklistViewControllerDidChangeChecklist(self)
         scheduleNotification(for: item)

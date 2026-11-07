@@ -14,6 +14,7 @@ class IconPickerViewController: UITableViewController {
     weak var delegate: IconPickerViewControllerDelegate?
 
     let icons: [(title: String, symbolName: String)] = [
+        ("Нет иконки", ""),
         ("Список", "list.bullet"),
         ("Покупки", "cart"),
         ("Путешествие", "airplane"),
@@ -50,7 +51,7 @@ class IconPickerViewController: UITableViewController {
 
         var content = cell.defaultContentConfiguration()
         content.text = icon.title
-        content.image = UIImage(systemName: icon.symbolName)
+        content.image = icon.symbolName.isEmpty ? nil : UIImage(systemName: icon.symbolName)
         cell.contentConfiguration = content
         return cell
     }

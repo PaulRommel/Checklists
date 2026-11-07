@@ -19,7 +19,7 @@ class ListDetailViewController: UITableViewController {
     var checklistToEdit: Checklist?
 
     let textField = UITextField()
-    var iconName = "list.bullet"
+    var iconName = ""   // по умолчанию без иконки, как в книге
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -81,7 +81,7 @@ class ListDetailViewController: UITableViewController {
         let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
         var content = cell.defaultContentConfiguration()
         content.text = "Icon"
-        content.image = UIImage(systemName: iconName)
+        content.image = iconName.isEmpty ? nil : UIImage(systemName: iconName)
         cell.contentConfiguration = content
         cell.accessoryType = .disclosureIndicator
         return cell

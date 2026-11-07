@@ -19,7 +19,7 @@ class AllListsViewController: UITableViewController {
             target: self,
             action: #selector(addList))
 
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: listCellReuseID)
+        tableView.register(ListCell.self, forCellReuseIdentifier: listCellReuseID)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -63,8 +63,8 @@ class AllListsViewController: UITableViewController {
 
         var content = cell.defaultContentConfiguration()
         content.text = checklist.name
-        content.secondaryText = "\(checklist.items.count)"
-        content.image = UIImage(systemName: checklist.iconName)
+        content.secondaryText = checklist.countLabelText()
+        content.image = checklist.iconName.isEmpty ? nil : UIImage(systemName: checklist.iconName)
         cell.contentConfiguration = content
         cell.accessoryType = .detailDisclosureButton
         return cell
@@ -111,11 +111,9 @@ extension AllListsViewController: ListDetailViewControllerDelegate {
 
     func listDetailViewController(_ controller: ListDetailViewController,
                                   didFinishAdding checklist: Checklist) {
-        let newRowIndex = dataModel.lists.count
         dataModel.lists.append(checklist)
-
-        let indexPath = IndexPath(row: newRowIndex, section: 0)
-        tableView.insertRows(at: [indexPath], with: .automatic)
+        dataModel.sortChecklists()
+        tableView.reloadData()   // новый список встаёт по алфавиту, не в конец
 
         dismiss(animated: true)
         dataModel.saveChecklists()
@@ -123,9 +121,9 @@ extension AllListsViewController: ListDetailViewControllerDelegate {
 
     func listDetailViewController(_ controller: ListDetailViewController,
                                   didFinishEditing checklist: Checklist) {
-        if let index = dataModel.lists.firstIndex(where: { $0 === checklist }) {
-            tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
-        }
+        dataModel.sortChecklists()
+        tableView.reloadData()   // имя могло измениться — список может переехать
+
         dismiss(animated: true)
         dataModel.saveChecklists()
     }

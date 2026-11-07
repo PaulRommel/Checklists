@@ -32,4 +32,26 @@ class Checklist: Codable {
         try container.encode(items, forKey: .items)
         try container.encode(iconName, forKey: .iconName)
     }
+
+    // MARK: - Sorting
+    func sortChecklistItems() {
+        items.sort { item1, item2 in
+            item1.text.localizedStandardCompare(item2.text) == .orderedAscending
+        }
+    }
+
+    // MARK: - Counts
+    func countUncheckedItems() -> Int {
+        items.reduce(0) { count, item in
+            item.checked ? count : count + 1
+        }
+    }
+
+    func countLabelText() -> String {
+        if items.isEmpty {
+            return "(No Items)"
+        } else {
+            return "\(countUncheckedItems()) Remaining"
+        }
+    }
 }
